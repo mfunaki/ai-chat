@@ -71,12 +71,30 @@ export function ChatContainer() {
     }
   }, [messages]);
 
+  const handleDismissError = useCallback(() => {
+    setError(null);
+  }, []);
+
   return (
     <div className="flex flex-col h-full">
       <MessageList messages={messages} isLoading={isLoading && messages[messages.length - 1]?.role === "user"} />
       {error && (
-        <div className="px-4 py-2 bg-red-50 border-t border-red-200">
-          <p className="text-sm text-red-600">{error}</p>
+        <div className="px-4 py-3 bg-red-50 border-t border-red-200 flex items-center justify-between animate-fade-in">
+          <div className="flex items-center gap-2">
+            <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p className="text-sm text-red-600">{error}</p>
+          </div>
+          <button
+            onClick={handleDismissError}
+            className="text-red-400 hover:text-red-600 transition-colors"
+            aria-label="閉じる"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
       )}
       <MessageInput onSend={handleSend} disabled={isLoading} />
