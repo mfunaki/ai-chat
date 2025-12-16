@@ -4,18 +4,40 @@ import { useState, useCallback } from "react";
 import { MessageList, MessageType } from "./MessageList";
 import { MessageInput } from "./MessageInput";
 
+// 定数設定
+const MAX_MESSAGES = 100; // フロントエンドで保持するメッセージの最大件数
+const MAX_MESSAGE_LENGTH = 4000; // メッセージの最大文字数
+const API_TIMEOUT_MS = 60000; // APIタイムアウト（60秒）
+
 export function ChatContainer() {
   const [messages, setMessages] = useState<MessageType[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleSend = useCallback(async (message: string) => {
+    // 入力バリデーション
+    if (message.length > MAX_MESSAGE_LENGTH) {
+      setError(`メッセージは${MAX_MESSAGE_LENGTH}文字以内で入力してください`);
+      return;
+    }
+
     setError(null);
     setIsLoading(true);
 
-    // ユーザーメッセージを追加
+    // ユーザーメッセージを追加（上限を超えた場合は古いメッセージを削除）
     const userMessage: MessageType = { role: "user", content: message };
-    setMessages((prev) => [...prev, userMessage]);
+    setMessages((prev) => {
+      const newMessages = [...prev, userMessage];
+      // 上限を超えた場合、古いメッセージを削除
+      if (newMessages.length > MAX_MESSAGES) {
+        return newMessages.slice(-MAX_MESSAGES);
+      }
+      return newMessages;
+    });
+
+    // タイムアウト用のAbortController
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
 
     try {
       const response = await fetch("/api/chat", {
@@ -25,12 +47,21 @@ export function ChatContainer() {
         },
         body: JSON.stringify({
           message,
-          history: messages,
+          history: messages.slice(-MAX_MESSAGES), // 送信時も上限を適用
         }),
+        signal: controller.signal,
       });
 
+      clearTimeout(timeoutId);
+
       if (!response.ok) {
-        throw new Error("チャットAPIでエラーが発生しました");
+        // エラーレスポンスのJSONを解析してメッセージを取得
+        try {
+          const errorData = await response.json();
+          throw new Error(errorData.error || "チャットAPIでエラーが発生しました");
+        } catch {
+          throw new Error("チャットAPIでエラーが発生しました");
+        }
       }
 
       // ストリーミングレスポンスを処理
@@ -63,7 +94,19 @@ export function ChatContainer() {
         });
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "エラーが発生しました");
+      clearTimeout(timeoutId);
+
+      // エラーメッセージの判定
+      let errorMessage = "エラーが発生しました";
+      if (err instanceof Error) {
+        if (err.name === "AbortError") {
+          errorMessage = "リクエストがタイムアウトしました。もう一度お試しください。";
+        } else {
+          errorMessage = err.message;
+        }
+      }
+
+      setError(errorMessage);
       // エラー時はユーザーメッセージを削除
       setMessages((prev) => prev.slice(0, -1));
     } finally {
