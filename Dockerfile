@@ -50,8 +50,8 @@ COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Prismaクライアントをコピー
-COPY --from=deps /app/node_modules/.prisma ./node_modules/.prisma
+# Prismaクライアントをコピー（カスタム出力先: src/generated/prisma）
+COPY --from=deps /app/src/generated/prisma ./src/generated/prisma
 COPY --from=deps /app/node_modules/@prisma ./node_modules/@prisma
 
 # 非rootユーザーに切り替え

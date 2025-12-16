@@ -1,5 +1,9 @@
 .PHONY: help install dev build start clean prisma-generate docker-build docker-run deploy health-check
 
+# .envファイルが存在する場合は読み込む
+-include .env
+export
+
 # デフォルトターゲット
 help:
 	@echo "mabl-aichat - 利用可能なコマンド:"
@@ -86,19 +90,24 @@ docker-run:
 # Cloud Run デプロイ
 # =============================================================================
 
-# Google Cloud プロジェクトID（環境変数で指定）
-GCP_PROJECT ?= your-gcp-project-id
+# Google Cloud 設定（.envから読み込み、未設定時はデフォルト値を使用）
+# PROJECT_ID: .envで設定されるGCPプロジェクトID
+PROJECT_ID ?= your-gcp-project-id
 GCP_REGION ?= asia-northeast1
 SERVICE_NAME ?= mabl-aichat
+AR_REPOSITORY ?= mabl-aichat
 
-# Cloud Runにデプロイ
-deploy: docker-build
+# Cloud Runにデプロイ（Artifact Registry使用）
+deploy:
 	@echo "Cloud Runにデプロイ中..."
-	gcloud builds submit --tag gcr.io/$(GCP_PROJECT)/$(IMAGE_NAME)
+	@echo "プロジェクト: $(PROJECT_ID)"
+	@echo "リージョン: $(GCP_REGION)"
+	gcloud builds submit --tag $(GCP_REGION)-docker.pkg.dev/$(PROJECT_ID)/$(AR_REPOSITORY)/$(IMAGE_NAME):$(IMAGE_TAG) --project=$(PROJECT_ID)
 	gcloud run deploy $(SERVICE_NAME) \
-		--image gcr.io/$(GCP_PROJECT)/$(IMAGE_NAME) \
+		--image $(GCP_REGION)-docker.pkg.dev/$(PROJECT_ID)/$(AR_REPOSITORY)/$(IMAGE_NAME):$(IMAGE_TAG) \
 		--platform managed \
 		--region $(GCP_REGION) \
+		--project $(PROJECT_ID) \
 		--allow-unauthenticated \
 		--min-instances 0 \
 		--max-instances 10 \
@@ -107,7 +116,7 @@ deploy: docker-build
 		--concurrency 80 \
 		--set-env-vars NODE_ENV=production
 	@echo "デプロイが完了しました"
-	@echo "注意: ANTHROPIC_API_KEYとDATABASE_URLはCloud Runコンソールで設定してください"
+	@echo "注意: ANTHROPIC_API_KEYはCloud Runコンソールで設定してください"
 
 # =============================================================================
 # その他
