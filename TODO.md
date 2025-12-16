@@ -40,10 +40,10 @@
 
 ## フェーズ3: バックエンド構築
 
-- [ ] Next.js App RouterへのHono統合（API Routes）
-- [ ] Mastraエージェントの設定（Claude Sonnet 4.5）
-- [ ] `/api/chat` エンドポイントの作成
-- [ ] ストリーミングレスポンスの実装
+- [x] Next.js App RouterへのHono統合（API Routes）
+- [x] Mastraエージェントの設定（Claude Sonnet 4.5）
+- [x] `/api/chat` エンドポイントの作成
+- [x] ストリーミングレスポンスの実装
 
 ## フェーズ4: フロントエンド構築
 
