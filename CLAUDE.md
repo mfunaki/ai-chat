@@ -1,0 +1,201 @@
+# mabl-aichat
+
+エンターテイメント向けAIチャットボットWebアプリケーション
+
+## プロジェクト概要
+
+- **プロジェクト名**: mabl-aichat
+- **用途**: エンターテイメント向けチャットボット
+- **対象ユーザー**: 一般ユーザー
+- **デプロイ先**: Google Cloud Run
+
+## 技術スタック
+
+### フロントエンド
+- **フレームワーク**: Next.js（App Router）
+- **スタイリング**: CSS Modules または Tailwind CSS
+- **レスポンシブ対応**: 必須
+
+### バックエンド
+- **APIフレームワーク**: Hono
+- **ORM**: Prisma
+- **データベース**: MongoDB
+
+### AI
+- **AIエージェントフレームワーク**: Mastra
+- **AIモデル**: Claude（Anthropic）
+
+## 機能要件
+
+### チャット機能
+- シンプルなテキストベースのチャット
+- ユーザーがメッセージを送信し、AIが応答を返す
+- ストリーミング応答: 不要（一括表示）
+
+### 会話履歴
+- セッション中のみ保持
+- ページをリロードまたはタブを閉じるとリセット
+- データベースへの永続化は不要
+
+### ユーザー管理
+- ログイン機能: なし
+- 認証: 不要
+- 誰でもすぐに利用可能
+
+## UI/UX要件
+
+### デザイン方向性
+- ビジネスライクでクリーンなデザイン
+- シンプルで使いやすいインターフェース
+
+### レイアウト
+- レスポンシブ対応（PC・タブレット・スマートフォン）
+- ダークモード: 不要
+
+### チャットUI
+- メッセージ入力欄
+- 送信ボタン
+- 会話履歴表示エリア
+- ユーザーとAIのメッセージを視覚的に区別
+
+## アーキテクチャ
+
+```
+┌─────────────────────────────────────────────────────┐
+│                    Frontend                          │
+│                 Next.js (App Router)                 │
+│                                                      │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  │
+│  │  Chat UI    │  │   State     │  │   API       │  │
+│  │  Component  │  │  Management │  │   Client    │  │
+│  └─────────────┘  └─────────────┘  └─────────────┘  │
+└─────────────────────────────────────────────────────┘
+                          │
+                          ▼
+┌─────────────────────────────────────────────────────┐
+│                    Backend                           │
+│                      Hono                            │
+│                                                      │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  │
+│  │   API       │  │   Mastra    │  │   Prisma    │  │
+│  │   Routes    │  │   Agent     │  │   Client    │  │
+│  └─────────────┘  └─────────────┘  └─────────────┘  │
+└─────────────────────────────────────────────────────┘
+                          │
+              ┌───────────┴───────────┐
+              ▼                       ▼
+┌─────────────────────┐   ┌─────────────────────┐
+│      Claude API     │   │      MongoDB        │
+│     (Anthropic)     │   │                     │
+└─────────────────────┘   └─────────────────────┘
+```
+
+## ディレクトリ構成（案）
+
+```
+mabl-aichat/
+├── src/
+│   ├── app/                    # Next.js App Router
+│   │   ├── layout.tsx
+│   │   ├── page.tsx
+│   │   └── api/                # API Routes (Hono)
+│   │       └── [[...route]]/
+│   │           └── route.ts
+│   ├── components/             # Reactコンポーネント
+│   │   ├── Chat/
+│   │   │   ├── ChatContainer.tsx
+│   │   │   ├── MessageList.tsx
+│   │   │   ├── MessageInput.tsx
+│   │   │   └── Message.tsx
+│   │   └── Layout/
+│   │       └── Header.tsx
+│   ├── lib/                    # ユーティリティ
+│   │   ├── mastra/             # Mastra設定
+│   │   │   └── agent.ts
+│   │   └── prisma/             # Prisma設定
+│   │       └── client.ts
+│   └── styles/                 # スタイル
+│       └── globals.css
+├── prisma/
+│   └── schema.prisma           # Prismaスキーマ
+├── public/
+├── package.json
+├── tsconfig.json
+├── next.config.js
+├── Dockerfile                  # Cloud Run用
+└── CLAUDE.md
+```
+
+## API設計
+
+### POST /api/chat
+
+チャットメッセージを送信し、AIの応答を取得する
+
+**リクエスト**
+```json
+{
+  "message": "ユーザーのメッセージ",
+  "history": [
+    { "role": "user", "content": "過去のメッセージ" },
+    { "role": "assistant", "content": "過去の応答" }
+  ]
+}
+```
+
+**レスポンス**
+```json
+{
+  "response": "AIの応答メッセージ"
+}
+```
+
+## 環境変数
+
+```env
+# Anthropic API
+ANTHROPIC_API_KEY=your_api_key
+
+# MongoDB
+DATABASE_URL=mongodb+srv://...
+
+# その他
+NODE_ENV=production
+```
+
+## デプロイ
+
+### Google Cloud Run
+- Dockerコンテナとしてデプロイ
+- 環境変数はCloud Runの設定で管理
+- 自動スケーリング対応
+
+## 開発コマンド
+
+```bash
+# 依存関係のインストール
+npm install
+
+# 開発サーバー起動
+npm run dev
+
+# ビルド
+npm run build
+
+# 本番サーバー起動
+npm start
+
+# Prismaクライアント生成
+npx prisma generate
+
+# Dockerビルド
+docker build -t mabl-aichat .
+```
+
+## 今後の拡張可能性（参考）
+
+- 会話履歴の永続化
+- ユーザー認証機能
+- キャラクター選択機能
+- ストリーミング応答
+- ダークモード対応
